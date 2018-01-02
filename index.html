@@ -1,0 +1,398 @@
+<html>
+<head>
+    <link href="https://bootswatch.com/4/minty/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/font-awesome.min.css" rel="stylesheet">
+    <!-- Load c3.css -->
+    <link href="./css/c3.min.css" rel="stylesheet">
+    <!-- Load d3.js and c3.js -->
+    <script src="./js/d3.min.js" charset="utf-8"></script>
+    <script src="./js/c3.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.8.1/firebase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://momentjs.com/downloads/moment-with-locales.js"></script>
+    <style>
+      img#avator{
+        border-radius: 50%;
+        height: 40px;
+        width: 40px;
+        border: 2px solid #fff;
+      }
+      .navbar-right{
+        text-align: right;
+        display: block;
+      }
+      div#app{
+        position: relative;
+        height: 100%;
+        width: 100%;
+      }
+      
+      div#wrapper{
+        display: flex;
+      }
+      
+      div.title{
+        margin: 10px 0px;
+        font-size: 32px;
+        font-weight: 800;
+        color: #78C2AD;
+      }
+      
+      div#config{
+        width: 30%;
+        position: absolute;
+        top: 10%;
+        left: 0;
+        right: 40%;
+        margin: auto;
+      }
+      
+      div#graph{
+        width: 20%;
+        position: absolute;
+        top: 10%;
+        left: 65%;
+        margin: auto;
+      }
+      
+      div#content{
+        width: 20%;
+        top: 10%;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        position: absolute;
+        margin: auto;
+      }
+      
+      div#today{
+        display: table;
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      div#today div{
+        display: table-cell;
+        border-left: 2px solid #78C2AD;
+        border-right: 2px solid #78C2AD;
+        width: 50%;
+        text-align: center;
+      }
+      
+      span.number{
+        font-size: 32px;
+        font-weight: 800;
+        margin-right: 10px;
+        color: #78C2AD;
+      }
+      
+      div#input{
+        text-align: center;
+        margin-top: 5%;
+      }
+      
+      div.maxInput{
+        margin-top: 5%;
+      }
+      
+      div#input .btn-primary{
+        margin-left: 10px;
+      }
+      
+      div#amountLog{
+        margin-top: 10%;
+        position: relative;
+        height: 100%;
+        width: 100%;
+      }
+      
+      div#amountLog ul{
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        margin: auto;
+        list-style-type: none;
+        padding: 0px;
+        text-align: center;
+      }
+      
+      div#amountLog ul li{
+        padding: 5px 0px;
+      }
+      
+      div#input .form-control{
+        display: inline-block;
+        width: 40%;
+      }
+      
+      div#config .form-control{
+        display: inline-block;
+        width: 20%;
+      }
+      
+      .time{
+        color: #888;
+        margin-left: 15px;
+      }
+      
+      .money{
+        margin-left: 10px;
+      }
+      
+      .today{
+        text-align: center;
+        font-size: 32px;
+        font-weight: 800;
+        color: #78C2AD;
+        margin: 10px 0px;
+      }
+    </style>
+</head>
+<body>
+    <div id="app">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="javascript:void(0);">食費ログ</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav my-2 my-lg-0 ml-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="javascript:void(0);" v-on:click="logout">ログアウト</a>
+              </li>
+            </ul>
+            <div>
+              <img id="avator">
+            </div>
+          </form>
+        </div>
+      </nav>
+      <div id="wrapper">
+        <div id="config">
+          <div class="title">設定</div>
+          <div class="maxInput">
+            <label>1日の食費：</label>
+            <input type="number" class="form-control" v-model="dayAmountMax" v-on:keyup.enter="maxSave" pattern="^[0-9]+"> 円
+            <button type="button" v-on:click="maxSave" class="btn btn-primary">登録</button>
+          </div>
+        </div>
+        <div id="content">
+          <div class="today">{{ today }}</div>
+          <div id="today">
+            <div>
+              <label>あと</label><br>
+              <span class="number">{{ useAmount.toLocaleString() }}</span> 円
+            </div>
+            <div>
+              <label>利用済</label><br>
+              <span class="number">{{total.toLocaleString()}}</span> 円
+            </div>
+          </div>
+          <div id="input">
+            <label>食費：</label>
+            <input type="number" class="form-control" v-model="money" v-on:keyup.enter="logSave" pattern="^[0-9]+"> 円
+            <button type="button" v-on:click="logSave" class="btn btn-primary">登録</button>
+          </div>
+          <div id="amountLog">
+            <ul id="log">
+              <li v-for="item in items">
+                <i class="fa fa-jpy" aria-hidden="true"></i>
+                <span class="money">{{ item.money.toLocaleString() }}円</span>
+                <span class="time">{{ item.time }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div id="graph">
+          <div class="title">グラフ</div>
+          <div id="weekly_graph"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyDyGPEOAI8Z0kV81Jzu9846iY43kH1k9GQ",
+        authDomain: "test-f36a5.firebaseapp.com",
+        databaseURL: "https://test-f36a5.firebaseio.com",
+        projectId: "test-f36a5",
+        storageBucket: "test-f36a5.appspot.com",
+        messagingSenderId: "225702977567"
+      };
+      
+      firebase.initializeApp(config);
+      var firebaseDb = firebase.database();
+      
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (!user) {
+          location.href = '/amount/login.html';
+        }
+        
+        var user = firebase.auth().currentUser;
+        var name = user.displayName,
+            email = user.email,
+            photoUrl = user.photoURL,
+            emailVerified = user.emailVerified,
+            uid = user.uid;
+        
+        console.log(photoUrl);
+        var avator = document.getElementById('avator');
+        avator.src = photoUrl;
+
+        firebaseDb.ref('credentials/' + uid).set({
+            userId: uid,
+            name: name,
+            email: email,
+            photoUrl: photoUrl,
+            emailVerified: emailVerified
+        });
+        
+        var app = new Vue({
+          el: '#app',
+          data: {
+            money: '',
+            photoUrl: '',
+            today: '',
+            total: 0,
+            items: [],
+            dayAmountMax: 2000,
+            useAmount: 2000
+          },
+          created: function(){
+              this.photoUrl = photoUrl;
+              var userId = firebase.auth().currentUser.uid;
+              var that = this;
+              
+              var now = new Date();
+              var todayAtMidn = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              
+              var today = moment().format('YYYY / MM / DD');
+              this.today = today;
+              
+              //1日の食費
+              var maxBase = firebase.database().ref('max/' + userId);
+              maxBase.once('value').then(function(snapshot) {
+                console.log("1日の食費:", snapshot.val());
+                
+                if (snapshot.val()){
+                  that.dayAmountMax = snapshot.val();
+                }
+              });
+              
+              //週日付を配列に格納
+              var date = [];
+              var nowdate = moment().format('YYYY/MM/DD');
+              date.push(nowdate);
+              
+              var weekly_graph = [];
+              weekly_graph.push(0);
+              
+              for(var i=-1;i>-7; i--){
+                var d = moment(nowdate);
+                date.push(d.add(i, "days").format("YYYY/MM/DD"));
+                weekly_graph.push(0);
+              }
+
+              //本日の食費ログ
+              var amountLog = firebase.database().ref('amountLog/' + userId);
+              amountLog.once('value').then(function(snapshot) {
+                var data = snapshot.val();
+                
+                for(key in data){
+                    var specificDate = new Date(data[key]['time']);
+                    if (todayAtMidn.getTime() <= specificDate.getTime()){
+                      var time = moment(data[key]['time']).format('HH:mm');
+                      that.items.unshift({
+                          money: data[key]['money'],
+                          time: time
+                      });
+                    }
+                    
+                    var amountLogTime = moment(data[key]['time']).format('YYYY/MM/DD');
+                    for(var i=0; i<date.length; i++){
+                        if (amountLogTime==date[i]){
+                            weekly_graph[i] += parseInt(data[key]['money']);
+                        }
+                    }
+                }
+                
+                that.dayAmountCalc();
+                
+                weekly_graph.unshift("食費");
+                console.log("date", date);
+                console.log("weekly_graph", weekly_graph);
+                
+                c3.generate({
+                  bindto: "#weekly_graph",
+                  size: {
+                    height: 200,
+                    width: 400
+                  },
+                  data: {
+                    columns: [
+                      weekly_graph,
+                    ],
+                    colors: {
+                      '食費': '#78C2AD',
+                    },
+                    type: 'bar'
+                  },
+                  axis: {
+                      x: {
+                          type: 'categories',
+                          categories: date,
+                          height: 50
+                      }
+                  }
+                });
+              });
+          },
+          methods:{
+            logSave: function(){
+              var now = new Date();
+              var log = {
+                //ブラウザによっては利用できないので注意(toLocaleString)
+                money: parseInt(this.money),
+                time: now.toLocaleString()
+              };
+              
+              var key = firebase.database().ref('amountLog').child(uid).push().key;
+              firebaseDb.ref('amountLog/' + uid + '/' + key).set(log);
+              
+              //配列の最初に追加(日時降順で表示したい)
+              log.time = moment(log.time).format('HH:mm');
+              this.items.unshift(log);
+              this.dayAmountCalc();
+              this.money = '';
+              
+
+            },
+            logout: function(){
+              firebase.auth().signOut().then(function() {
+                location.href = '/amount/login.html';
+              }).catch(function(error) {
+                console.log("ログアウト失敗:", error);
+              });
+            },
+            dayAmountCalc: function(){
+              var amount = 0;
+              for(var i=0; i<this.items.length; i++){
+                  amount += parseInt(this.items[i].money);
+              }
+              
+              this.useAmount = this.dayAmountMax - amount;
+              this.total     = amount;
+            },
+            maxSave: function(){
+              firebaseDb.ref('max/' + uid).set(this.dayAmountMax);
+              this.dayAmountCalc();
+            }
+          }
+        })
+      });
+    </script>
+</body>
+</html>
